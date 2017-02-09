@@ -36,45 +36,45 @@ class Device
 
   def push(apk, destination=ANDROID_TMP_DIR)
     remote_path = File.join(destination, apk.package)
-    System.instance.terminal.adb("-s #{serial_number} push #{apk.path} #{remote_path}")
+    shell("push #{apk.path} #{remote_path}")
 
     return remote_path
   end
 
   def install(remote_path)
-    System.instance.terminal.adb("-s #{serial_number} shell pm install #{remote_path}")
+    root("pm install #{remote_path}")
   end
 
   def uninstall(package)
-    System.instance.terminal.adb("-s #{serial_number} shell pm uninstall #{package}")
+    root("am uninstall #{package}")
   end
 
   def force_stop(package)
-    System.instance.terminal.adb("-s #{serial_number} shell am force-stop #{package}")
+    root("am force-stop #{package}")
   end
 
   def print_alarms
-    System.instance.terminal.adb("-s #{serial_number} shell dumpsys alarm")
+    root("dumpsys alarm")
   end
 
   def press_home
-    System.instance.terminal.adb("-s #{serial_number} shell input keyevent KEYCODE_HOME")
+    shell("input keyevent KEYCODE_HOME")
   end
 
   def press_recent_apps
-    System.instance.terminal.adb("-s #{serial_number} shell input keyevent KEYCODE_APP_SWITCH")
+    shell("input keyevent KEYCODE_APP_SWITCH")
   end
 
   def press_back
-    System.instance.terminal.adb("-s #{serial_number} shell input keyevent KEYCODE_BACK")
+    shell("input keyevent KEYCODE_BACK")
   end
 
   def press_power
-    shell(input keyevent KEYCODE_POWER)
+    shell("input keyevent KEYCODE_POWER")
   end
 
   def adbd_booted_as_root?
-    System.instance.terminal.adb("-s #{serial_number} shell whoami").strip == 'root'
+    shell("whoami").strip == USER_ROOT
   end
 
   def setprop(name, value)

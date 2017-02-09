@@ -3,6 +3,7 @@ require 'securerandom'
 require_relative 'device'
 require_relative '../../lib/log_file'
 require_relative '../terminal'
+require 'set'
 
 # https://github.com/jackpal/Android-Terminal-Emulator/wiki/Android-Shell-Command-Reference
 class System
@@ -13,10 +14,15 @@ class System
 
   def initialize
     @terminal = Terminal.new
+    @used_ports = Set.new
   end
 
   def terminal
     @terminal
+  end
+
+  def clear_used_ports
+    @used_ports.clear
   end
 
   def deploy(apk, device)
@@ -31,13 +37,23 @@ class System
     android_serials.each do |android_serial|
       terminal.adb("-s #{android_serial} emu kill")
     end
+
+    #TODO : must check here that all ports are cleared
+    clear_used_ports
   end
 
   def start_emulator(avd_name)
     #must ensure adb server is running
     # Logger.instance.log("#Starting emulator")
     #must lock the port
-    port = Device.allowed_ports.detect(&:free?)
+
+    #this all needs to be synchronized call
+    port = Device.allowed_ports.detect do |port|
+      !@used_ports.include?(port.number) && port.free?
+    end
+
+    #maybe remove lock after instantiating device class
+    @used_ports.add(port.number)
 
     if port.nil?
       raise "No free ports available"
