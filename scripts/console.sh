@@ -2,4 +2,4 @@
 #exit on error
 set -e
 
-irb -r ./application.rb
+bundle exec irb -r ./application.rb 

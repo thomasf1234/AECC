@@ -21,6 +21,10 @@ get '/healthcheck' do
   'Sinatra Server AndroidEmulatorControlCentre is running'
 end
 
+get '/emulator/list_avds' do
+  System.instance.terminal.emulator("-list-avds")
+end
+
 get '/emulator/:avd_name/start' do
   content_type :json
   device = System.instance.start_emulator(params['avd_name'])

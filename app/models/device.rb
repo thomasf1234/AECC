@@ -23,7 +23,7 @@ class Device
     setprop(UUID_PROP_KEY, uuid)
     assigned_uuid = ""
 
-    Utils.retry_block(5, 1) do
+    Retry.new(5, 1).start do
       assigned_uuid = getprop(UUID_PROP_KEY)
 
       if (assigned_uuid.empty? || assigned_uuid != uuid)

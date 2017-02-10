@@ -9,3 +9,6 @@
 .externalNativeBuild
 .idea/
 *.log
+vendor/
+.bundle/
+Gemfile.lock

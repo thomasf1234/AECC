@@ -2,7 +2,7 @@ require 'singleton'
 require 'securerandom'
 require_relative 'device'
 require_relative '../../lib/log_file'
-require_relative '../terminal'
+require_relative '../models/terminal'
 require 'set'
 
 # https://github.com/jackpal/Android-Terminal-Emulator/wiki/Android-Shell-Command-Reference
@@ -62,7 +62,7 @@ class System
       #TODO : get PID
       terminal.emulator("-wipe-data -no-boot-anim -shell -netdelay none -netspeed full -port #{port.number} -avd #{avd_name} > log/#{avd_name}.log &")
 
-      android_serial = Utils.retry_block(5, 10) do
+      android_serial = Retry.new(5, 10).start do
         ALogger.instance.log("#attempting to find android-serial on port #{port.number}")
         android_serials = @terminal.adb("devices").scan(ANDROID_SERIAL_IDENTIFIER_REGEX)
 

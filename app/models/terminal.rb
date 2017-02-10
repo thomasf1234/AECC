@@ -1,27 +1,28 @@
-require_relative 'a_logger'
-require_relative '../lib/utils'
+require_relative '../a_logger'
+require_relative '../../lib/utils'
 
 class Terminal
   ANDROID_SDK_HOME_KEY = 'ANDROID_SDK_HOME'
   EXIT_STATUS_SUCCESS = 0
   DEFAULT_TIMEOUT_SECONDS = 30*60
 
-  def initialize(stubbed=false)
-    @stubbed = stubbed
+  def initialize
+    @history = []
     @latest_build_tools_version = find_latest_build_tools_version
   end
 
-  def stubbed?
-    @stubbed
+  def history
+    @history
   end
 
-  def get_last_command
-    @last_command
+  def last_command
+    @history.last
   end
 
   def execute(command, timeout=DEFAULT_TIMEOUT_SECONDS)
     ALogger.instance.log("executing: '#{command}'")
     formatted_command = timeout_cmd(command, timeout)
+    @history.push(command)
     return_value = sh(formatted_command)
     exit_status = $?
     raise exit_status.inspect unless exit_status.exitstatus == EXIT_STATUS_SUCCESS
@@ -37,6 +38,7 @@ class Terminal
   end
 
   def aapt(command)
+
     execute("#{File.join(ENV[ANDROID_SDK_HOME_KEY], "build-tools/#{@latest_build_tools_version}/aapt")} #{command}")
   end
 
@@ -47,19 +49,11 @@ class Terminal
   end
 
   def sh(command)
-    @last_command = command
-
-    if !stubbed?
-      `#{command}`
-    end
+    `#{command}`
   end
 
   def find_latest_build_tools_version
-    if stubbed?
-      return '25.0.1'
-    else
-      versions = execute("ls #{File.join(ENV[ANDROID_SDK_HOME_KEY], 'build-tools')}").split("\n")
-      return Utils.latest_version(versions)
-    end
+    versions = execute("ls #{File.join(ENV[ANDROID_SDK_HOME_KEY], 'build-tools')}").split("\n")
+    Utils.latest_version(versions)
   end
 end
