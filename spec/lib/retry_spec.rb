@@ -1,12 +1,12 @@
 require 'spec_helper'
 
-describe Retry do
+describe AECC::Retry do
   describe "#initialize" do
     context 'only count passed' do
       context 'not a positive integer' do
         it 'raises argument error' do
           [nil, 'string', -1, 0, 1.1].each do |invalid_count|
-            expect { Retry.new(invalid_count) }.to raise_error(ArgumentError, "count must be a positive integer")
+            expect { AECC::Retry.new(invalid_count) }.to raise_error(ArgumentError, "count must be a positive integer")
           end
         end
       end
@@ -14,7 +14,7 @@ describe Retry do
       context 'positive integer' do
         it 'return Retry object' do
           [1, 10, 4].each do |valid_count|
-            retrier  = Retry.new(valid_count)
+            retrier  = AECC::Retry.new(valid_count)
             expect(retrier.instance_variable_get(:@count)).to eq(valid_count)
           end
         end
@@ -25,22 +25,22 @@ describe Retry do
       context 'not positive integers' do
         it 'return Retry object' do
           [nil, 'string', -1, 0, 1.1].each do |invalid_count|
-            expect { Retry.new(invalid_count, 4) }.to raise_error(ArgumentError, "count must be a positive integer")
+            expect { AECC::Retry.new(invalid_count, 4) }.to raise_error(ArgumentError, "count must be a positive integer")
           end
 
           ['string', -1, 0, 1.1].each do |invalid_rest_interval|
-            expect { Retry.new(1, invalid_rest_interval) }.to raise_error(ArgumentError, "rest_interval must be a positive integer")
+            expect { AECC::Retry.new(1, invalid_rest_interval) }.to raise_error(ArgumentError, "rest_interval must be a positive integer")
           end
 
           [nil, 'string', -1, 0, 1.1].each do |invalid|
-            expect { Retry.new(invalid, invalid) }.to raise_error(ArgumentError, "count must be a positive integer")
+            expect { AECC::Retry.new(invalid, invalid) }.to raise_error(ArgumentError, "count must be a positive integer")
           end
         end
       end
 
       context 'positive integers' do
         it 'return Retry object' do
-          retrier  = Retry.new(3, 10)
+          retrier  = AECC::Retry.new(3, 10)
           expect(retrier.instance_variable_get(:@count)).to eq(3)
           expect(retrier.instance_variable_get(:@rest_interval)).to eq(10)
         end
@@ -48,7 +48,7 @@ describe Retry do
 
       context 'nil for rest_interval' do
         it 'return Retry object' do
-          retrier  = Retry.new(3, nil)
+          retrier  = AECC::Retry.new(3, nil)
           expect(retrier.instance_variable_get(:@count)).to eq(3)
           expect(retrier.instance_variable_get(:@rest_interval)).to eq(nil)
         end
@@ -57,7 +57,7 @@ describe Retry do
   end
 
   describe "#start (2 retries)" do
-    let(:retrier) { Retry.new(2) }
+    let(:retrier) { AECC::Retry.new(2) }
 
     context 'success first try' do
       it 'returns the result of the block' do

@@ -1,7 +1,8 @@
 require 'socket'
-require 'sinatra'
 require 'json'
 require_relative 'application'
+
+require 'sinatra'
 
 PORT = 3000
 
@@ -22,17 +23,21 @@ get '/healthcheck' do
 end
 
 get '/emulator/list_avds' do
-  System.instance.terminal.emulator("-list-avds")
+  AECC::System.instance.terminal.emulator("-list-avds")
 end
 
 get '/emulator/:avd_name/start' do
   content_type :json
-  device = System.instance.start_emulator(params['avd_name'])
+  device =  AECC::System.instance.start_emulator(params['avd_name'])
   { :avd_name => device.avd_name, :serial_number => device.serial_number, :port => device.port.number, :uuid => device.uuid }.to_json
 end
 
-get '/emulator/kill_all' do
-  System.instance.kill_all_emulators
+get '/emulator/running/kill_all' do
+  AECC::System.instance.kill_all_emulators
+end
+
+get '/emulator/running/:uuid/kill' do
+  AECC::System.instance.kill_all_emulators
 end
 
 

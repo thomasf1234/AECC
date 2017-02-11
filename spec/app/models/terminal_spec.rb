@@ -1,7 +1,7 @@
 require 'spec_helper'
 
-describe Terminal do
-  let(:terminal) { Terminal.new }
+describe AECC::Terminal do
+  let(:terminal) { AECC::Terminal.new }
 
   describe "#execute" do
     context "success" do
@@ -71,7 +71,7 @@ describe Terminal do
 
   describe "#aapt" do
     before :each do
-      allow_any_instance_of(Terminal).to receive(:find_latest_build_tools_version).and_return('25.0.1')
+      allow_any_instance_of(AECC::Terminal).to receive(:find_latest_build_tools_version).and_return('25.0.1')
       allow(terminal).to receive(:sh).and_return(true)
       terminal.aapt("dump badge test/samples/apk/test.apk")
     end

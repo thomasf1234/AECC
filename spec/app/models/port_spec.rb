@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe Port do
+describe AECC::Port do
   describe "#free?" do
     context 'already bound to' do
       it 'cannot bind to the port so returns false' do
@@ -9,7 +9,7 @@ describe Port do
         begin
           server = TCPServer.new('127.0.0.1', 0)
           bound_port = server.addr[1]
-          port = Port.new(bound_port)
+          port = AECC::Port.new(bound_port)
           expect(port.free?).to eq(false)
         ensure
           if !server.nil?
@@ -29,7 +29,7 @@ describe Port do
           server = TCPServer.new('127.0.0.1', 0)
           bound_port = server.addr[1]
           server.close
-          port = Port.new(bound_port)
+          port = AECC::Port.new(bound_port)
           expect(port.free?).to eq(true)
         ensure
           if !server.nil?

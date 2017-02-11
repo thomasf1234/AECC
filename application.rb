@@ -2,6 +2,10 @@ require 'fileutils'
 require_relative 'lib/utils'
 require_relative 'lib/retry'
 require_relative 'lib/log_file'
+require_relative 'lib/lock'
+
+require_relative 'app/factories/apk_factory'
+
 require_relative 'app/models/system'
 require_relative 'app/models/device'
 require_relative 'app/models/terminal'
