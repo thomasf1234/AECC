@@ -12,6 +12,10 @@ module AECC
       @number = number
     end
 
+    def ==(port)
+      @number == port.number
+    end
+
     def free?
       free = false
 

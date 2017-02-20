@@ -1,7 +1,5 @@
 require 'singleton'
 
-#change to use ruby Logger
-#Maybe logging module that allows each class to log (better approach)
 module AECC
   class DB
     include Singleton

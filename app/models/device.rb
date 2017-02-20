@@ -8,7 +8,8 @@ module AECC
     UUID_PROP_KEY = 'emu.uuid'
     ANDROID_TMP_DIR = '/data/local/tmp/'
     DEVICE_BOOTED_IDENTIFIER = '1'
-    attr_reader :serial_number, :port_number, :uuid
+    attr_reader :android_serial, :port_number, :uuid
+    attr_writer :uuid
 
     @allowed_ports = (5554..5584).step(2).to_a.map { |number| Port.new(number).freeze }.freeze
     def self.allowed_ports
@@ -18,17 +19,18 @@ module AECC
     def self.find(uuid)
       row = AECC::DB.instance.running_emulators.find(uuid)
 
-      device = new(row['android_serial'], Port.new(row['port']))
+      device = new(row['android_serial'], row['port'])
 
       if device.getprop(UUID_PROP_KEY) == uuid
+        device.uuid = uuid
         device
       else
         raise 'Device not found'
       end
     end
 
-    def initialize(serial_number, port_number)
-      @serial_number = serial_number
+    def initialize(android_serial, port_number)
+      @android_serial = android_serial
       @port_number = port_number
     end
 
@@ -49,13 +51,13 @@ module AECC
 
     def push(apk, destination=ANDROID_TMP_DIR)
       remote_path = File.join(destination, apk.package)
-      shell("push #{apk.path} #{remote_path}")
+      adb("push \"#{apk.path}\" \"#{remote_path}\"")
 
       remote_path
     end
 
     def install(remote_path)
-      root("pm install #{remote_path}")
+      root("pm install \"#{remote_path}\"")
     end
 
     def uninstall(package)
@@ -106,6 +108,20 @@ module AECC
       getprop("sys.boot_completed").include?(DEVICE_BOOTED_IDENTIFIER)
     end
 
+    def permissions(package)
+      raw_text = root("dumpsys package #{package}")
+      raw_permissions = AECC::Utils.read_section(raw_text, /runtime permissions:/, /android.permission.*$/, /^ *$/)
+      raw_permissions.map do |raw_permission|
+        name = raw_permission.match(/android\.permission\.\w+/).to_s
+        granted = (raw_permission.match(/granted=\w+/).to_s.split('=').last == 'true')
+        AECC::Permission.new(name, granted)
+      end
+    end
+
+    def revoke_permission(package, permission)
+      root("pm revoke #{package} #{permission.name}")
+    end
+
     private
     def shell(command)
       adb_shell(command, USER_SHELL)
@@ -120,7 +136,7 @@ module AECC
     end
 
     def adb(command)
-      System.instance.terminal.adb("-s #{serial_number} #{command}")
+      System.instance.terminal.adb("-s #{android_serial} #{command}")
     end
   end
 end

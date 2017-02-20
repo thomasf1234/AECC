@@ -14,6 +14,7 @@ require_relative 'app/models/system'
 require_relative 'app/models/device'
 require_relative 'app/models/terminal'
 require_relative 'app/models/apk'
+require_relative 'app/models/permission'
 
 def ensure_log_directory
   FileUtils.mkdir_p('log')
