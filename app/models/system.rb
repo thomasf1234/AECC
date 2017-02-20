@@ -11,24 +11,20 @@ module AECC
     include Singleton
     DEFAULT_ANDROID_SDK_HOME = '/usr/lib/android-sdk'
     ANDROID_SERIAL_IDENTIFIER_REGEX = /emulator-\d+/
-    DEVICE_BOOTED_IDENTIFIER = '1'
 
     def initialize
       @terminal = AECC::Terminal.new
-      @used_ports = Set.new
+      ObjectSpace.define_finalizer(self,
+                                   self.class.method(:finalize).to_proc)
+    end
+
+    def self.finalize(id)
+      instance.kill_all_emulators
+      puts "Killed all emulators"
     end
 
     def terminal
       @terminal
-    end
-
-    def clear_used_ports
-      @used_ports.clear
-    end
-
-    def deploy(apk, device)
-      remote_path = device.push(apk)
-      device.install(remote_path)
     end
 
     #Change to find Device.find_by(android_serial)
@@ -40,31 +36,43 @@ module AECC
       end
 
       #TODO : must check here that all ports are cleared
-      clear_used_ports
+      AECC::DB.instance.running_emulators.delete_all
+    end
+
+    def kill(uuid)
+      row = AECC::DB.instance.running_emulators.find(uuid)
+      android_serial = row['android_serial']
+      terminal.adb("-s #{android_serial} emu kill")
+      AECC::DB.instance.running_emulators.delete(uuid)
     end
 
     def start_emulator(avd_name)
-      #must ensure adb server is running
-      # Logger.instance.log("#Starting emulator")
-      #must lock the port
+      AECC::Logger.instance.log("starting adb server")
+      terminal.adb('start-server')
 
-      #this all needs to be synchronized call
-      port = AECC::Device.allowed_ports.detect do |port|
-        !@used_ports.include?(port.number) && port.free?
+      uuid = nil
+      AECC::Device.allowed_ports.each do |port|
+        if port.free?
+          begin
+            uuid = AECC::DB.instance.running_emulators.insert({'android_serial' => nil, 'port' => port.number})
+            break
+          rescue IMDB::UniqueConstraintViolation => e
+            # ignored
+          end
+        end
       end
 
-      #maybe remove lock after instantiating device class
-      @used_ports.add(port.number)
-
-      if port.nil?
+      if uuid.nil?
         raise "No free ports available"
       else
+        row = AECC::DB.instance.running_emulators.find(uuid)
+        port_number = row['port']
         AECC::Logger.instance.log("#starting emulator avd #{avd_name}")
         #TODO : get PID
-        terminal.emulator("-wipe-data -no-boot-anim -shell -netdelay none -netspeed full -port #{port.number} -avd #{avd_name} > log/#{avd_name}.log &")
+        terminal.emulator("-wipe-data -no-boot-anim -shell -netdelay none -netspeed full -port #{port_number} -avd #{avd_name} > log/#{avd_name}.log &")
 
         android_serial = Retry.new(5, 10).start do
-          AECC::Logger.instance.log("#attempting to find android-serial on port #{port.number}")
+          AECC::Logger.instance.log("#attempting to find android-serial on port #{port_number}")
           android_serials = @terminal.adb("devices").scan(ANDROID_SERIAL_IDENTIFIER_REGEX)
 
           if(android_serials.empty?)
@@ -72,37 +80,40 @@ module AECC
             raise 'No device not found'
           else
             android_serial = android_serials.detect do |android_serial|
-              !android_serial.match(/#{port.number}/).nil?
+              !android_serial.match(/#{port_number}/).nil?
             end
 
             if android_serial.nil?
-              AECC::Logger.instance.log("raising: Device with port '#{port.number}' not found")
-              raise "Device with port '#{port.number}' not found"
+              AECC::Logger.instance.log("raising: Device with port '#{port_number}' not found")
+              raise "Device with port '#{port_number}' not found"
             else
               android_serial
             end
           end
         end
+
+        AECC::DB.instance.running_emulators.update(uuid, {'android_serial' => android_serial, 'port' => port_number})
       end
 
       AECC::Logger.instance.log("#waiting for device to come online")
-      @terminal.adb("-s #{android_serial} wait-for-device")
+      terminal.adb("-s #{android_serial} wait-for-device")
 
-      #Add timeout in case device does not boot
-      device_booted = false
-      until (device_booted)
-        AECC::Logger.instance.log("#waiting for device to boot")
-        device_booted = terminal.adb("-s #{android_serial} shell getprop sys.boot_completed").include?(DEVICE_BOOTED_IDENTIFIER)
-        AECC::Utils.wait(1)
+      device = AECC::Device.new(android_serial, port_number)
+
+      Timeout::timeout(180) do
+        until (device.booted?)
+          AECC::Logger.instance.log("#waiting for device to boot")
+          AECC::Utils.wait(1)
+        end
       end
 
-      AECC::Logger.instance.log("#Hurray! Device booted successfully")
 
-      device = AECC::Device.new(android_serial, port)
+      AECC::Logger.instance.log("#Device booted successfully")
 
       AECC::Utils.wait(5)
 
-      device.assign_uuid(SecureRandom.uuid)
+      #device booted so assign the uuid
+      device.assign_uuid(uuid)
 
       AECC::Logger.instance.log("#Pressing home on device")
       device.press_home

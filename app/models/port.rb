@@ -26,6 +26,7 @@ module AECC
           end
         end
       rescue Errno::EADDRINUSE, Errno::ETIMEDOUT, Timeout::Error
+        # ignored
       ensure
         if !socket.nil?
           if !socket.closed?

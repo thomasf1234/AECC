@@ -7,16 +7,29 @@ module AECC
     USER_SHELL = 'shell'
     UUID_PROP_KEY = 'emu.uuid'
     ANDROID_TMP_DIR = '/data/local/tmp/'
-    attr_reader :serial_number, :port, :uuid
+    DEVICE_BOOTED_IDENTIFIER = '1'
+    attr_reader :serial_number, :port_number, :uuid
 
-    @allowed_ports = (5554..5584).step(2).to_a.map { |number| Port.new(number) }
+    @allowed_ports = (5554..5584).step(2).to_a.map { |number| Port.new(number).freeze }.freeze
     def self.allowed_ports
       @allowed_ports
     end
 
-    def initialize(serial_number, port)
+    def self.find(uuid)
+      row = AECC::DB.instance.running_emulators.find(uuid)
+
+      device = new(row['android_serial'], Port.new(row['port']))
+
+      if device.getprop(UUID_PROP_KEY) == uuid
+        device
+      else
+        raise 'Device not found'
+      end
+    end
+
+    def initialize(serial_number, port_number)
       @serial_number = serial_number
-      @port = port
+      @port_number = port_number
     end
 
     def assign_uuid(uuid)
@@ -38,7 +51,7 @@ module AECC
       remote_path = File.join(destination, apk.package)
       shell("push #{apk.path} #{remote_path}")
 
-      return remote_path
+      remote_path
     end
 
     def install(remote_path)
@@ -58,19 +71,23 @@ module AECC
     end
 
     def press_home
-      shell("input keyevent KEYCODE_HOME")
+      input_keyevent('KEYCODE_HOME')
     end
 
     def press_recent_apps
-      shell("input keyevent KEYCODE_APP_SWITCH")
+      input_keyevent('KEYCODE_APP_SWITCH')
     end
 
     def press_back
-      shell("input keyevent KEYCODE_BACK")
+      input_keyevent('KEYCODE_BACK')
     end
 
     def press_power
-      shell("input keyevent KEYCODE_POWER")
+      input_keyevent('KEYCODE_POWER')
+    end
+
+    def input_keyevent(keycode)
+      shell("input keyevent #{keycode}")
     end
 
     def adbd_booted_as_root?
@@ -85,6 +102,10 @@ module AECC
       shell("getprop #{name}").strip
     end
 
+    def booted?
+      getprop("sys.boot_completed").include?(DEVICE_BOOTED_IDENTIFIER)
+    end
+
     private
     def shell(command)
       adb_shell(command, USER_SHELL)
@@ -95,7 +116,11 @@ module AECC
     end
 
     def adb_shell(command, user)
-      System.instance.terminal.adb("-s #{serial_number} shell su #{user} #{command}")
+      adb("shell su #{user} #{command}")
+    end
+
+    def adb(command)
+      System.instance.terminal.adb("-s #{serial_number} #{command}")
     end
   end
 end

@@ -12,5 +12,17 @@ module AECC
     def self.wait(seconds)
       sleep(seconds)
     end
+
+    def self.margin(s1, s2)
+      s1 + ' '*(60-s1.length) + s2
+    end
+
+    def self.time_it
+      t0 = Time.now
+      result = yield
+      t1 = Time.now
+      duration = t1 - t0
+      [result, duration]
+    end
   end
 end
