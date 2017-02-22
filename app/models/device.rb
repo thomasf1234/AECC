@@ -8,6 +8,7 @@ module AECC
     UUID_PROP_KEY = 'emu.uuid'
     ANDROID_TMP_DIR = '/data/local/tmp/'
     DEVICE_BOOTED_IDENTIFIER = '1'
+
     attr_reader :android_serial, :port_number, :uuid
     attr_writer :uuid
 
@@ -121,6 +122,15 @@ module AECC
     def revoke_permission(package, permission)
       root("pm revoke #{package} #{permission.name}")
     end
+
+    def reset_permissions(package)
+      granted_permissions = permissions(package).select(&:granted?)
+
+      granted_permissions.each do |permission|
+        revoke_permission(package, permission)
+      end
+    end
+
 
     private
     def shell(command)

@@ -1,4 +1,4 @@
-require 'IMDB'
+require 'imdb'
 
 module Tables
   class RunningEmulators < IMDB::Table

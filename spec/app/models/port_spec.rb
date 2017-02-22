@@ -41,4 +41,11 @@ describe AECC::Port do
       end
     end
   end
+
+  describe "#==" do
+    it 'equates on port number' do
+      expect(AECC::Port.new(1)).to eq(AECC::Port.new(1))
+      expect(AECC::Port.new(2)).to_not eq(AECC::Port.new(1))
+    end
+  end
 end
