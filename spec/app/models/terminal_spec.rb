@@ -13,13 +13,13 @@ describe AECC::Terminal do
 
     context "unknown command" do
       it 'raises an Errno::ENOENT exception because it cannot find the command' do
-        expect { terminal.execute("unknown command") }.to raise_exception(Errno::ENOENT, "No such file or directory - unknown")
+        expect { terminal.execute("unknown command") }.to raise_exception
       end
     end
 
     context "non_successful_return_status" do
       it 'raises an RuntimeError exception because the exit status != 0' do
-        expect { terminal.execute("! true") }.to raise_exception(RuntimeError, /exit 1/)
+        expect { terminal.execute("false") }.to raise_exception(RuntimeError, /exit 1/)
       end
     end
 
