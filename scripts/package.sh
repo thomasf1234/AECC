@@ -2,6 +2,9 @@
 #exit on error
 set -e
 
+echo "Ensuring build dir exists"
+mkdir -p build
+
 echo "Clearing out previously built packages"
 rm -rf build/*.tgz
 
