@@ -12,3 +12,5 @@
 vendor/
 .bundle/
 Gemfile.lock
+public/version.txt
+tmp/

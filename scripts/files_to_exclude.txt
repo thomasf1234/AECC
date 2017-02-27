@@ -1,0 +1,7 @@
+build
+.git
+.gitignore
+log
+tmp
+vendor/cache
+vendor/bundle/ruby/2.0.0/cache
